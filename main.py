@@ -1,5 +1,6 @@
 import argparse
 import logging
+from history import snapshot
 
 from config import load_config
 from extract import extract
@@ -41,7 +42,11 @@ def main(raw_file=None):
             raise SystemExit("Database checks failed.")
         logger.info("Database checks passed")
 
-        for table in ["industries", "countries", "companies", "revenue"]:
+        source = raw_file if raw_file else config["url"]
+        snapshot(conn, clean, source)
+
+        for table in ["industries", "countries", "companies", "revenue",
+                      "runs", "revenue_history"]:
             n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             logger.info("%s: %d rows", table, n)
     finally:

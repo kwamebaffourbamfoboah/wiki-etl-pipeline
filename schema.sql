@@ -22,3 +22,22 @@ CREATE TABLE IF NOT EXISTS revenue (
     revenue_bn REAL NOT NULL CHECK (revenue_bn > 0),
     loaded_at  TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS runs (
+    run_id     INTEGER PRIMARY KEY,
+    run_at     TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    data_hash  TEXT NOT NULL,
+    row_count  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS revenue_history (
+    run_id        INTEGER NOT NULL REFERENCES runs(run_id),
+    company       TEXT NOT NULL,
+    industry      TEXT NOT NULL,
+    country       TEXT NOT NULL,
+    is_subsidiary INTEGER NOT NULL CHECK (is_subsidiary IN (0, 1)),
+    rank          INTEGER NOT NULL,
+    revenue_bn    REAL NOT NULL CHECK (revenue_bn > 0),
+    PRIMARY KEY (run_id, company)
+);
