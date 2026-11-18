@@ -32,6 +32,13 @@ def transform(raw):
 
     df = raw.rename(columns=COLUMN_MAP)[list(COLUMN_MAP.values())].copy()
 
+    bad_ranks = df[~df["rank"].str.fullmatch(r"\d+")]
+    if not bad_ranks.empty:
+        examples = bad_ranks[["rank", "company"]].head(5).to_dict("records")
+        raise ValueError(
+            f"{len(bad_ranks)} row(s) have a rank that is not a plain whole number "
+            f"(for example a tied rank like '=6'): {examples}"
+        )
     df["rank"] = df["rank"].astype(int)
     df["revenue_bn"] = pd.to_numeric(df["revenue_bn"], errors="coerce")
     for col in ["company", "industry", "country"]:

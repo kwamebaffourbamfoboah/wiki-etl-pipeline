@@ -1,8 +1,12 @@
+import logging
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+logger = logging.getLogger(__name__)
 
 
 def extract(url, must_have=("Revenue",)):
@@ -14,11 +18,18 @@ def extract(url, must_have=("Revenue",)):
     for table in soup.find_all("table", class_="wikitable"):
         cols = [th.get_text(strip=True) for th in table.find("tr").find_all("th")]
         if all(any(word.lower() in c.lower() for c in cols) for word in must_have):
-            rows = []
+            rows, skipped = [], 0
             for tr in table.find_all("tr")[1:]:
                 cells = [c.get_text(strip=True) for c in tr.find_all(["td", "th"])]
                 if len(cells) == len(cols):
                     rows.append(cells)
+                elif any(cells):  # the row has content but the wrong shape
+                    skipped += 1
+                    logger.warning(
+                        "Skipped row with %d cells (expected %d): %s",
+                        len(cells), len(cols), cells,
+                    )
+            logger.info("Extracted %d rows, skipped %d malformed rows", len(rows), skipped)
             return pd.DataFrame(rows, columns=cols)
 
     raise ValueError(f"No table found with columns containing {must_have}")
