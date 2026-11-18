@@ -1,16 +1,16 @@
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
+from config import load_config
 
-DB_PATH = "companies.db"
+
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(load_config()["db_path"])
     conn.execute("PRAGMA foreign_keys = ON")   # SQLite ignores foreign keys unless you ask
     return conn
-
 
 def create_tables(conn):
     conn.executescript(SCHEMA_PATH.read_text())

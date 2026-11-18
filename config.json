@@ -1,0 +1,6 @@
+{
+    "url": "https://en.wikipedia.org/wiki/List_of_largest_companies_in_Africa_by_revenue",
+    "dataset_name": "africa_companies",
+    "raw_dir": "data/raw",
+    "db_path": "companies.db"
+}
