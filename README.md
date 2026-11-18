@@ -18,6 +18,8 @@ Built with Python, SQLite and SQL only.
 | `main.py` | Runs extract -> save raw -> transform -> validate -> load -> database checks |
 | `tests/` | pytest tests that run offline on a saved sample (`tests/data/`) |
 | `pytest.ini` | pytest settings |
+| `history.py` | Records each changed run in `runs` and `revenue_history` |
+| `demo_history.py` | Demo: two runs with changed data, queried with SQL |
 
 ## How to run
 
@@ -50,6 +52,31 @@ Settings such as the URL live in `config.json`. Progress and problems are report
 - `companies` links to both and flags subsidiaries (`is_subsidiary`).
 - `revenue` has one row per company (`company_id` is both primary key and foreign key).
 
+## History
+
+The live tables (`companies`, `revenue`) always mirror the latest scrape. Past runs are kept separately:
+
+- `runs`: one row per run that changed anything (time, source, a hash of the data, row count)
+- `revenue_history`: one row per company per run, never updated
+
+History stores company, industry and country as plain text, with no foreign key to `companies`. Companies that leave the source page are deleted from the live tables, but their history stays.
+
+**Same data, no new snapshot.** Each run hashes the clean data and compares it with the latest run. If nothing changed, no snapshot is added, so re-running the pipeline never creates duplicate history.
+
+Example, from `demo_history.py` (it builds a throwaway `demo.db`): which companies changed between two runs?
+
+```sql
+SELECT a.company, a.revenue_bn AS old_revenue, b.revenue_bn AS new_revenue
+FROM revenue_history a
+JOIN revenue_history b ON b.company = a.company
+WHERE a.run_id = 1 AND b.run_id = 2 AND a.revenue_bn != b.revenue_bn;
+```
+
+```
+Eskom: 13.941 -> 15.2
+Sonatrach: 77.013 -> 80.0
+```
+
 ## Design decisions
 
 - **Safe to re-run.** Names are `UNIQUE`, and loading uses upserts, so a second run updates rows instead of duplicating them.
@@ -73,6 +100,7 @@ The tests run with `pytest` and need no internet. They use a saved snapshot of t
 - `test_transform.py`: types, merged industry labels, subsidiary flags, a clear error for tied ranks like `=6`
 - `test_validate.py`: each data check is fed deliberately bad data and must catch it
 - `test_load.py`: loading twice creates no duplicates, removed companies are deleted, and the database checks catch broken data
+- `test_history.py`: same data twice makes one snapshot, changed data makes a second one and keeps the old values, history survives deleted companies
 
 ## Limitations
 
